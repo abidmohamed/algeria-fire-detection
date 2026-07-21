@@ -14,16 +14,111 @@ from src.db_client import DbClient
 
 # Page configuration
 st.set_page_config(
-    page_title="Algeria Fire Watch - Early Warning Platform",
+    page_title="Algeria Fire Watch - منصة مراقبة الحرائق",
     page_icon="🔥",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
+# ── Bilingual Translation Dictionary ──
+LANG = {
+    "en": {
+        "sidebar_title": "🔥 Algeria Fire Watch",
+        "connected": "Connected to Supabase.",
+        "demo_mode": "Using simulated demo data.",
+        "data_sources": "<b>Data Sources</b><br/>NASA FIRMS (VIIRS 3-sat)<br/>Copernicus Sentinel-2<br/>Open-Meteo Weather API",
+        "pipeline_info": "<b>Pipeline v2</b><br/>Multi-sensor fusion<br/>DBSCAN clustering<br/>Composite scoring (0-100)",
+        "main_title": "🇩🇿 ALGERIA FOREST FIRE DETECTION PLATFORM",
+        "subtitle": "Real-Time Satellite Active Fire Trigger & AI Verification Early Warning System",
+        "stat_confirmed": "Active Confirmed Fires",
+        "stat_pending": "Awaiting Verification",
+        "stat_false": "False Alarms Filtered",
+        "stat_resolved": "Resolved / Extinguished",
+        "stat_sirocco": "Active Sirocco Risks",
+        "map_title": "🔥 Active Fire Location Map",
+        "filter_status": "Alert Status",
+        "filter_wilaya": "Wilaya (Province)",
+        "filter_frp": "Min FRP (MW)",
+        "all_wilayas": "All wilayas",
+        "warnings_title": "🚨 Real-Time Warnings",
+        "filter_date": "Date Range",
+        "filter_by_wilaya": "Filter by Wilaya",
+        "no_fires": "No active fire triggers found for selected criteria.",
+        "fire_confirmed": "Fire Confirmed",
+        "thermal_pending": "Thermal Anomaly Awaiting Verification",
+        "false_alarm": "False Alarm Filtered",
+        "resolved_fire": "Resolved / Extinguished",
+        "wilaya": "Wilaya",
+        "coordinates": "Coordinates",
+        "detection": "Detection",
+        "risk_score": "Risk Score",
+        "frp": "FRP",
+        "confidence": "Confidence",
+        "time": "Time",
+        "temp": "Temp",
+        "humidity": "Humidity",
+        "wind": "Wind",
+        "risk": "Risk",
+        "sentinel_quicklook": "Sentinel-2 Quicklook",
+        "confirmed_fire_lbl": "Confirmed Forest Fire",
+        "pending_lbl": "Pending Sentinel Verification",
+        "false_positive_lbl": "False Positive Filtered",
+        "resolved_lbl": "Resolved / Extinguished",
+        "footer": "Algeria Forest Fire detection and early warning platform. Data Source: NASA FIRMS (VIIRS/MODIS) | Copernicus Sentinel-2 | Open-Meteo.",
+        "lang_label": "Language / اللغة",
+    },
+    "ar": {
+        "sidebar_title": "🔥 مراقبة حرائق الجزائر",
+        "connected": "متصل بقاعدة البيانات.",
+        "demo_mode": "وضع تجريبي — بيانات محاكاة.",
+        "data_sources": "<b>مصادر البيانات</b><br/>NASA FIRMS (3 أقمار VIIRS)<br/>Copernicus Sentinel-2<br/>Open-Meteo للطقس",
+        "pipeline_info": "<b>خط المعالجة v2</b><br/>دمج متعدد الأقمار<br/>تجميع مكاني DBSCAN<br/>تسجيل مركب (0-100)",
+        "main_title": "🇩🇿 منصة الكشف عن حرائق الغابات في الجزائر",
+        "subtitle": "نظام إنذار مبكر بالأقمار الاصطناعية والذكاء الاصطناعي",
+        "stat_confirmed": "حرائق مؤكدة نشطة",
+        "stat_pending": "في انتظار التحقق",
+        "stat_false": "إنذارات كاذبة مرشّحة",
+        "stat_resolved": "تم إخمادها",
+        "stat_sirocco": "مخاطر رياح السيروكو",
+        "map_title": "🔥 خريطة مواقع الحرائق النشطة",
+        "filter_status": "حالة الإنذار",
+        "filter_wilaya": "الولاية",
+        "filter_frp": "الحد الأدنى FRP (MW)",
+        "all_wilayas": "كل الولايات",
+        "warnings_title": "🚨 الإنذارات في الوقت الفعلي",
+        "filter_date": "نطاق التاريخ",
+        "filter_by_wilaya": "تصفية حسب الولاية",
+        "no_fires": "لا توجد حرائق نشطة للمعايير المحددة.",
+        "fire_confirmed": "حريق مؤكد",
+        "thermal_pending": "شذوذ حراري في انتظار التحقق",
+        "false_alarm": "إنذار كاذب",
+        "resolved_fire": "تم إخمادها",
+        "wilaya": "الولاية",
+        "coordinates": "الإحداثيات",
+        "detection": "وقت الكشف",
+        "risk_score": "درجة الخطورة",
+        "frp": "FRP",
+        "confidence": "الثقة",
+        "time": "الوقت",
+        "temp": "الحرارة",
+        "humidity": "الرطوبة",
+        "wind": "الرياح",
+        "risk": "الخطورة",
+        "sentinel_quicklook": "صورة Sentinel-2",
+        "confirmed_fire_lbl": "حريق غابات مؤكد",
+        "pending_lbl": "في انتظار تحقق Sentinel",
+        "false_positive_lbl": "إنذار كاذب مرشّح",
+        "resolved_lbl": "تم إخمادها",
+        "footer": "منصة الكشف عن حرائق الغابات والإنذار المبكر في الجزائر. مصادر البيانات: NASA FIRMS | Copernicus Sentinel-2 | Open-Meteo.",
+        "lang_label": "Language / اللغة",
+    }
+}
+
 # Premium Custom CSS Injection for Dark/Glassmorphism Theme
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700&display=swap');
 
 /* Main app background */
 .stApp {
@@ -31,7 +126,7 @@ st.markdown("""
     background-image: radial-gradient(circle at 10% 20%, rgba(244, 63, 94, 0.06) 0%, rgba(0, 0, 0, 0) 90%), 
                       radial-gradient(circle at 90% 80%, rgba(245, 158, 11, 0.03) 0%, rgba(0, 0, 0, 0) 90%);
     color: #e2e8f0;
-    font-family: 'Outfit', sans-serif;
+    font-family: 'Outfit', 'Noto Kufi Arabic', sans-serif;
 }
 
 /* Sidebar styling */
@@ -90,7 +185,7 @@ section[data-testid="stSidebar"] {
 
 /* Subtitle and header formatting */
 h1, h2, h3 {
-    font-family: 'Outfit', sans-serif !important;
+    font-family: 'Outfit', 'Noto Kufi Arabic', sans-serif !important;
     font-weight: 700 !important;
 }
 
@@ -105,6 +200,9 @@ h1, h2, h3 {
 .stProgress > div > div > div > div {
     background: linear-gradient(90deg, #f43f5e, #f59e0b) !important;
 }
+
+/* RTL support for Arabic */
+.rtl { direction: rtl; text-align: right; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -114,91 +212,65 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ── Wilaya lookup based on approximate coordinate ranges for fire-prone provinces ──
+# ── Wilaya lookup ──
 WILAYA_BOUNDS = {
-    "Tizi Ouzou": {"lat": (36.55, 36.95), "lon": (3.70, 4.35)},
-    "Bejaia": {"lat": (36.45, 36.85), "lon": (4.70, 5.50)},
-    "Jijel": {"lat": (36.55, 36.90), "lon": (5.50, 6.10)},
-    "Bouira": {"lat": (36.15, 36.60), "lon": (3.40, 4.10)},
-    "Setif": {"lat": (35.80, 36.50), "lon": (5.00, 5.90)},
-    "Skikda": {"lat": (36.60, 37.10), "lon": (6.50, 7.30)},
-    "Annaba": {"lat": (36.60, 37.10), "lon": (7.40, 8.00)},
-    "El Tarf": {"lat": (36.50, 37.10), "lon": (8.00, 8.70)},
-    "Medea": {"lat": (35.90, 36.45), "lon": (2.50, 3.50)},
-    "Blida": {"lat": (36.30, 36.60), "lon": (2.60, 3.20)},
-    "Tipaza": {"lat": (36.40, 36.70), "lon": (1.90, 2.60)},
-    "Khenchela": {"lat": (35.00, 35.60), "lon": (6.90, 7.60)},
-    "Guelma": {"lat": (36.20, 36.65), "lon": (7.00, 7.70)},
-    "Constantine": {"lat": (36.20, 36.55), "lon": (6.40, 7.00)},
-    "Batna": {"lat": (35.30, 35.80), "lon": (5.80, 6.60)},
-    "Tlemcen": {"lat": (34.60, 35.20), "lon": (-1.80, -1.00)},
-    "Chlef": {"lat": (36.00, 36.50), "lon": (0.90, 1.70)},
+    "Tizi Ouzou / تيزي وزو": {"lat": (36.55, 36.95), "lon": (3.70, 4.35)},
+    "Bejaia / بجاية": {"lat": (36.45, 36.85), "lon": (4.70, 5.50)},
+    "Jijel / جيجل": {"lat": (36.55, 36.90), "lon": (5.50, 6.10)},
+    "Bouira / البويرة": {"lat": (36.15, 36.60), "lon": (3.40, 4.10)},
+    "Setif / سطيف": {"lat": (35.80, 36.50), "lon": (5.00, 5.90)},
+    "Skikda / سكيكدة": {"lat": (36.60, 37.10), "lon": (6.50, 7.30)},
+    "Annaba / عنابة": {"lat": (36.60, 37.10), "lon": (7.40, 8.00)},
+    "El Tarf / الطارف": {"lat": (36.50, 37.10), "lon": (8.00, 8.70)},
+    "Medea / المدية": {"lat": (35.90, 36.45), "lon": (2.50, 3.50)},
+    "Blida / البليدة": {"lat": (36.30, 36.60), "lon": (2.60, 3.20)},
+    "Tipaza / تيبازة": {"lat": (36.40, 36.70), "lon": (1.90, 2.60)},
+    "Khenchela / خنشلة": {"lat": (35.00, 35.60), "lon": (6.90, 7.60)},
+    "Guelma / قالمة": {"lat": (36.20, 36.65), "lon": (7.00, 7.70)},
+    "Constantine / قسنطينة": {"lat": (36.20, 36.55), "lon": (6.40, 7.00)},
+    "Batna / باتنة": {"lat": (35.30, 35.80), "lon": (5.80, 6.60)},
+    "Tlemcen / تلمسان": {"lat": (34.60, 35.20), "lon": (-1.80, -1.00)},
+    "Chlef / الشلف": {"lat": (36.00, 36.50), "lon": (0.90, 1.70)},
 }
 
 def get_wilaya(lat, lon):
-    """Reverse-geocode coordinates to an approximate Algerian wilaya."""
     for name, bounds in WILAYA_BOUNDS.items():
         if bounds["lat"][0] <= lat <= bounds["lat"][1] and bounds["lon"][0] <= lon <= bounds["lon"][1]:
             return name
     if lat > 36.0:
-        return "Northern Tell Atlas"
+        return "Northern Tell Atlas / أطلس التل"
     elif lat > 34.0:
-        return "Hauts Plateaux"
+        return "Hauts Plateaux / الهضاب العليا"
     else:
-        return "Saharan Atlas"
+        return "Saharan Atlas / الأطلس الصحراوي"
 
-# ── Generate mock data for visualization if database is not configured ──
+# ── Mock Data ──
 def get_mock_data():
     now = datetime.now(timezone.utc)
     return [
-        {
-            "id": 1, "latitude": 36.712, "longitude": 4.045,
-            "frp": 124.5, "confidence": 92,
-            "acquisition_time": now - timedelta(hours=2),
-            "status": "CONFIRMED", "temp": 41.2, "humidity": 14.5,
-            "wind_speed": 32.4, "wind_direction": 185.0,
-            "risk_score": 94.0, "product_id": "S2A_MSIL2A_20260717T101221",
-            "quicklook_url": None, "telegram_message_id": "12345"
-        },
-        {
-            "id": 2, "latitude": 36.758, "longitude": 5.081,
-            "frp": 68.2, "confidence": 78,
-            "acquisition_time": now - timedelta(hours=4),
-            "status": "CONFIRMED", "temp": 39.5, "humidity": 18.0,
-            "wind_speed": 22.0, "wind_direction": 170.0,
-            "risk_score": 82.0, "product_id": "S2B_MSIL2A_20260717T100803",
-            "quicklook_url": None, "telegram_message_id": "12346"
-        },
-        {
-            "id": 3, "latitude": 36.802, "longitude": 5.761,
-            "frp": 25.1, "confidence": 62,
-            "acquisition_time": now - timedelta(minutes=45),
-            "status": "PENDING", "temp": 38.0, "humidity": 21.0,
-            "wind_speed": 18.5, "wind_direction": 110.0,
-            "risk_score": 45.0, "product_id": None,
-            "quicklook_url": None, "telegram_message_id": None
-        },
-        {
-            "id": 4, "latitude": 32.894, "longitude": -0.492,
-            "frp": 45.8, "confidence": 85,
-            "acquisition_time": now - timedelta(hours=8),
-            "status": "CONFIRMED", "temp": 42.0, "humidity": 12.0,
-            "wind_speed": 28.0, "wind_direction": 200.0,
-            "risk_score": 96.0, "product_id": "S2A_MSIL2A_20260717T101221",
-            "quicklook_url": None, "telegram_message_id": "12347"
-        },
-        {
-            "id": 5, "latitude": 36.425, "longitude": 2.871,
-            "frp": 12.4, "confidence": 55,
-            "acquisition_time": now - timedelta(hours=10),
-            "status": "FALSE_POSITIVE", "temp": 36.8, "humidity": 24.5,
-            "wind_speed": 12.0, "wind_direction": 90.0,
-            "risk_score": 28.0, "product_id": None,
-            "quicklook_url": None, "telegram_message_id": None
-        }
+        {"id": 1, "latitude": 36.712, "longitude": 4.045, "frp": 124.5, "confidence": 92,
+         "acquisition_time": now - timedelta(hours=2), "status": "CONFIRMED", "temp": 41.2,
+         "humidity": 14.5, "wind_speed": 32.4, "wind_direction": 185.0, "risk_score": 94.0,
+         "product_id": None, "quicklook_url": None, "telegram_message_id": None},
+        {"id": 2, "latitude": 36.758, "longitude": 5.081, "frp": 68.2, "confidence": 78,
+         "acquisition_time": now - timedelta(hours=4), "status": "CONFIRMED", "temp": 39.5,
+         "humidity": 18.0, "wind_speed": 22.0, "wind_direction": 170.0, "risk_score": 82.0,
+         "product_id": None, "quicklook_url": None, "telegram_message_id": None},
+        {"id": 3, "latitude": 36.802, "longitude": 5.761, "frp": 25.1, "confidence": 62,
+         "acquisition_time": now - timedelta(minutes=45), "status": "PENDING", "temp": 38.0,
+         "humidity": 21.0, "wind_speed": 18.5, "wind_direction": 110.0, "risk_score": 45.0,
+         "product_id": None, "quicklook_url": None, "telegram_message_id": None},
+        {"id": 4, "latitude": 36.425, "longitude": 2.871, "frp": 12.4, "confidence": 55,
+         "acquisition_time": now - timedelta(hours=10), "status": "FALSE_POSITIVE", "temp": 36.8,
+         "humidity": 24.5, "wind_speed": 12.0, "wind_direction": 90.0, "risk_score": 28.0,
+         "product_id": None, "quicklook_url": None, "telegram_message_id": None},
+        {"id": 5, "latitude": 36.650, "longitude": 3.90, "frp": 85.0, "confidence": 88,
+         "acquisition_time": now - timedelta(days=2), "status": "RESOLVED", "temp": 40.0,
+         "humidity": 16.0, "wind_speed": 25.0, "wind_direction": 190.0, "risk_score": 90.0,
+         "product_id": None, "quicklook_url": None, "telegram_message_id": None},
     ]
 
-# Cached function for database queries to prevent slamming Supabase on every interaction
+# ── DB Fetch ──
 @st.cache_data(ttl=30)
 def fetch_fires_from_db(db_url):
     try:
@@ -208,7 +280,6 @@ def fetch_fires_from_db(db_url):
         logging.getLogger("dashboard").error(f"Failed to fetch fires from DB: {e}", exc_info=True)
         return None
 
-# ── Fetch data from DB or fallback ──
 db_configured = False
 fires = []
 
@@ -219,125 +290,142 @@ if db_client.db_url and "change-me" not in db_client.db_url:
         if res is not None:
             fires = res
             db_configured = True
-        else:
-            db_configured = False
     except Exception as e:
         logging.getLogger("dashboard").error(f"Database connection error: {e}", exc_info=True)
-        db_configured = False
 
 if not db_configured:
     fires = get_mock_data()
 
 df = pd.DataFrame(fires)
 
-# Ensure acquisition_time is in datetime format
 if not df.empty and "acquisition_time" in df.columns:
     df["acquisition_time"] = pd.to_datetime(df["acquisition_time"], utc=True)
 
-# Add wilaya column
 if not df.empty:
     df["wilaya"] = df.apply(lambda r: get_wilaya(float(r["latitude"]), float(r["longitude"])), axis=1)
 
-# ── Sidebar ──
-st.sidebar.markdown("<h2 style='text-align: center;'>🔥 Algeria Fire Watch</h2>", unsafe_allow_html=True)
+# ── Sidebar with Language Toggle ──
+lang_choice = st.sidebar.radio("Language / اللغة", ["English", "العربية"], index=0, key="lang_toggle", horizontal=True)
+lang = "ar" if lang_choice == "العربية" else "en"
+t = LANG[lang]
+text_dir = "rtl" if lang == "ar" else "ltr"
+
+st.sidebar.markdown(f"<h2 style='text-align: center;'>{t['sidebar_title']}</h2>", unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 if db_configured:
-    st.sidebar.success("Connected to Supabase.")
+    st.sidebar.success(t["connected"])
 else:
-    st.sidebar.warning("Using simulated demo data.")
+    st.sidebar.warning(t["demo_mode"])
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("""
-<div style="font-size: 12px; color: #64748b;">
-    <b>Data Sources</b><br/>
-    NASA FIRMS (VIIRS 3-sat)<br/>
-    Copernicus Sentinel-2<br/>
-    Open-Meteo Weather API<br/><br/>
-    <b>Pipeline v2</b><br/>
-    Multi-sensor fusion<br/>
-    DBSCAN clustering<br/>
-    Composite scoring (0-100)
+st.sidebar.markdown(f"""
+<div style="font-size: 12px; color: #64748b; direction: {text_dir};">
+    {t['data_sources']}<br/><br/>
+    {t['pipeline_info']}
 </div>
 """, unsafe_allow_html=True)
 
 # ── Header ──
-st.title("🇩🇿 ALGERIA FOREST FIRE DETECTION PLATFORM")
-st.markdown("##### Real-Time Satellite Active Fire Trigger & AI Verification Early Warning System")
+st.markdown(f"<h1 style='direction: {text_dir};'>{t['main_title']}</h1>", unsafe_allow_html=True)
+st.markdown(f"<h5 style='direction: {text_dir}; color: #94a3b8;'>{t['subtitle']}</h5>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ── Stats Row ──
-col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4, col5 = st.columns(5)
 
-total_fires = len(df[df["status"] == "CONFIRMED"]) if not df.empty else 0
+# Only count CONFIRMED/PENDING as "active" — RESOLVED are separate
+active_confirmed = len(df[df["status"] == "CONFIRMED"]) if not df.empty else 0
 pending_fires = len(df[df["status"] == "PENDING"]) if not df.empty else 0
 false_positives = len(df[df["status"] == "FALSE_POSITIVE"]) if not df.empty else 0
+resolved_fires = len(df[df["status"] == "RESOLVED"]) if not df.empty else 0
 
 sirocco_regions = 0
 if not df.empty and "temp" in df.columns and "wind_direction" in df.columns:
-    sirocco_regions = len(df[
-        (df["temp"] > 38) & 
-        (df["wind_direction"] >= 135) & 
-        (df["wind_direction"] <= 225)
-    ])
+    active_df = df[df["status"].isin(["CONFIRMED", "PENDING"])]
+    sirocco_regions = len(active_df[
+        (active_df["temp"] > 38) & 
+        (active_df["wind_direction"] >= 135) & 
+        (active_df["wind_direction"] <= 225)
+    ]) if not active_df.empty else 0
 
 with col1:
     st.markdown(f"""
-    <div class="glass-card">
-        <div class="stat-title">Confirmed Forest Fires</div>
-        <div class="stat-value">{total_fires}</div>
+    <div class="glass-card" style="direction: {text_dir};">
+        <div class="stat-title">{t['stat_confirmed']}</div>
+        <div class="stat-value">{active_confirmed}</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col2:
     st.markdown(f"""
-    <div class="glass-card">
-        <div class="stat-title">Awaiting Verification</div>
+    <div class="glass-card" style="direction: {text_dir};">
+        <div class="stat-title">{t['stat_pending']}</div>
         <div class="stat-value-green" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{pending_fires}</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col3:
     st.markdown(f"""
-    <div class="glass-card">
-        <div class="stat-title">Saharan False Alarms Filtered</div>
+    <div class="glass-card" style="direction: {text_dir};">
+        <div class="stat-title">{t['stat_false']}</div>
         <div class="stat-value-gray">{false_positives}</div>
     </div>
     """, unsafe_allow_html=True)
 
 with col4:
     st.markdown(f"""
-    <div class="glass-card">
-        <div class="stat-title">Active Sirocco Fire Risks</div>
+    <div class="glass-card" style="direction: {text_dir};">
+        <div class="stat-title">{t['stat_resolved']}</div>
+        <div class="stat-value-green">{resolved_fires}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with col5:
+    st.markdown(f"""
+    <div class="glass-card" style="direction: {text_dir};">
+        <div class="stat-title">{t['stat_sirocco']}</div>
         <div class="stat-value" style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{sirocco_regions}</div>
     </div>
     """, unsafe_allow_html=True)
 
-# ── Map Filters (inline row above the map) ──
-st.subheader("🔥 Active Fire Location Map")
+# ── Map Filters ──
+st.subheader(t["map_title"])
 
 fcol1, fcol2, fcol3 = st.columns([2, 2, 1])
 
+STATUS_DISPLAY = {
+    "CONFIRMED": "🔴 " + t["fire_confirmed"],
+    "PENDING": "🟡 " + t["thermal_pending"],
+    "FALSE_POSITIVE": "⚪ " + t["false_alarm"],
+    "RESOLVED": "🟢 " + t["resolved_fire"],
+}
+
 with fcol1:
-    status_filter = st.multiselect(
-        "Alert Status",
-        options=["CONFIRMED", "PENDING", "FALSE_POSITIVE"],
-        default=["CONFIRMED", "PENDING"],
+    status_options = list(STATUS_DISPLAY.keys())
+    status_labels = list(STATUS_DISPLAY.values())
+    selected_labels = st.multiselect(
+        t["filter_status"],
+        options=status_labels,
+        default=[STATUS_DISPLAY["CONFIRMED"], STATUS_DISPLAY["PENDING"]],
         key="map_status"
     )
+    # Map back to DB values
+    label_to_key = {v: k for k, v in STATUS_DISPLAY.items()}
+    status_filter = [label_to_key[l] for l in selected_labels if l in label_to_key]
 
 with fcol2:
     available_wilayas = sorted(df["wilaya"].unique().tolist()) if not df.empty and "wilaya" in df.columns else []
     wilaya_map_filter = st.multiselect(
-        "Wilaya (Province)",
+        t["filter_wilaya"],
         options=available_wilayas,
         default=[],
         key="map_wilaya",
-        placeholder="All wilayas"
+        placeholder=t["all_wilayas"]
     )
 
 with fcol3:
-    min_frp = st.slider("Min FRP (MW)", 0.0, 300.0, 0.0, 10.0, key="map_frp")
+    min_frp = st.slider(t["filter_frp"], 0.0, 300.0, 0.0, 10.0, key="map_frp")
 
 # Apply map filters
 if not df.empty:
@@ -369,43 +457,39 @@ if GEOJSON_PATH.exists():
             geojson_data,
             name="Forest Hazard Risk Zone",
             style_function=lambda x: {
-                "fillColor": "#10b981",
-                "color": "#059669",
-                "weight": 2,
-                "fillOpacity": 0.05
+                "fillColor": "#10b981", "color": "#059669",
+                "weight": 2, "fillOpacity": 0.05
             }
         ).add_to(m)
     except Exception as e:
         st.error(f"Error drawing boundary: {e}")
 
 # Plot fire markers
+STATUS_COLORS = {
+    "CONFIRMED": ("#ef4444", t["confirmed_fire_lbl"]),
+    "PENDING": ("#f59e0b", t["pending_lbl"]),
+    "FALSE_POSITIVE": ("#64748b", t["false_positive_lbl"]),
+    "RESOLVED": ("#10b981", t["resolved_lbl"]),
+}
+
 if not df_filtered.empty:
     for idx, row in df_filtered.iterrows():
-        if row["status"] == "CONFIRMED":
-            color = "#ef4444"
-            status_lbl = "Confirmed Forest Fire"
-        elif row["status"] == "PENDING":
-            color = "#f59e0b"
-            status_lbl = "Pending Sentinel Verification"
-        else:
-            color = "#64748b"
-            status_lbl = "False Positive Filtered"
+        color, status_lbl = STATUS_COLORS.get(row["status"], ("#64748b", row["status"]))
 
         formatted_time = row["acquisition_time"].strftime("%Y-%m-%d %H:%M UTC") if pd.notna(row["acquisition_time"]) else "N/A"
         wilaya_name = row.get("wilaya", "Unknown")
 
         popup_html = f"""
-        <div style="font-family: 'Outfit', sans-serif; width: 230px; color:#1e293b;">
+        <div style="font-family: 'Outfit', 'Noto Kufi Arabic', sans-serif; width: 230px; color:#1e293b;">
             <h4 style="margin: 0 0 6px 0; color:#b91c1c;">{status_lbl}</h4>
             <hr style="margin: 4px 0 6px 0; border: 0; border-top:1px solid #cbd5e1;"/>
-            <b>Wilaya:</b> {wilaya_name}<br/>
-            <b>Coords:</b> {row['latitude']:.4f}, {row['longitude']:.4f}<br/>
-            <b>FRP:</b> {row['frp']:.1f} MW<br/>
-            <b>Confidence:</b> {row['confidence']}%<br/>
-            <b>Time:</b> {formatted_time}<br/>
+            <b>{t['wilaya']}:</b> {wilaya_name}<br/>
+            <b>{t['coordinates']}:</b> {row['latitude']:.4f}, {row['longitude']:.4f}<br/>
+            <b>{t['frp']}:</b> {row['frp']:.1f} MW<br/>
+            <b>{t['confidence']}:</b> {row['confidence']}%<br/>
+            <b>{t['time']}:</b> {formatted_time}<br/>
         """
 
-        # Weather block
         temp_str = f"{row['temp']:.1f} C" if pd.notna(row.get('temp')) else "N/A"
         humidity_str = f"{row['humidity']:.1f}%" if pd.notna(row.get('humidity')) else "N/A"
         wind_str = f"{row['wind_speed']:.1f} km/h" if pd.notna(row.get('wind_speed')) else "N/A"
@@ -414,17 +498,16 @@ if not df_filtered.empty:
         if temp_str != "N/A" or humidity_str != "N/A" or wind_str != "N/A":
             popup_html += f"""
             <hr style="margin: 6px 0 6px 0; border: 0; border-top:1px dashed #cbd5e1;"/>
-            <b>Temp:</b> {temp_str}<br/>
-            <b>Humidity:</b> {humidity_str}<br/>
-            <b>Wind:</b> {wind_str}<br/>
-            <b>Risk:</b> {risk_str}<br/>
+            <b>{t['temp']}:</b> {temp_str}<br/>
+            <b>{t['humidity']}:</b> {humidity_str}<br/>
+            <b>{t['wind']}:</b> {wind_str}<br/>
+            <b>{t['risk']}:</b> {risk_str}<br/>
             """
 
-        # Quicklook image (base64 for local files)
+        # Quicklook image
         if "quicklook_url" in row and pd.notna(row["quicklook_url"]) and row["quicklook_url"] is not None:
             quicklook_path = str(row["quicklook_url"])
             img_data_uri = None
-
             if not quicklook_path.startswith("http"):
                 local_path = Path(quicklook_path)
                 if local_path.exists():
@@ -438,55 +521,50 @@ if not df_filtered.empty:
                         pass
             else:
                 img_data_uri = quicklook_path
-
             if img_data_uri:
                 popup_html += f"""
                 <hr style="margin: 6px 0 6px 0; border: 0; border-top:1px solid #cbd5e1;"/>
-                <b>Sentinel-2 Quicklook:</b><br/>
+                <b>{t['sentinel_quicklook']}:</b><br/>
                 <img src="{img_data_uri}" style="width:100%; border-radius:6px; margin-top:4px; border:1px solid #94a3b8;"/>
                 """
 
         popup_html += "</div>"
-
-        # Sanitize for Folium/JS
         clean_popup_html = popup_html.replace("\n", "").replace("\r", "").replace("'", "&#39;")
 
         if pd.isna(row["latitude"]) or pd.isna(row["longitude"]):
             continue
 
+        marker_radius = 8 if row["status"] == "CONFIRMED" else (5 if row["status"] == "RESOLVED" else 6)
+        marker_opacity = 0.35 if row["status"] == "RESOLVED" else 0.6
+
         folium.CircleMarker(
             location=[float(row["latitude"]), float(row["longitude"])],
-            radius=8 if row["status"] == "CONFIRMED" else 6,
-            color=color,
-            fill=True,
-            fill_color=color,
-            fill_opacity=0.6,
+            radius=marker_radius,
+            color=color, fill=True, fill_color=color,
+            fill_opacity=marker_opacity,
             popup=folium.Popup(clean_popup_html, max_width=260)
         ).add_to(m)
 
-# Render map with JS escape sanitization
+# Render map
 map_html = m._repr_html_()
 map_html = re.sub(r'(?<!\\)\\([0-9])', r'\\\\\1', map_html)
 components.html(map_html, height=700, scrolling=False)
 
-# ── Real-Time Warnings Section ──
+# ── Real-Time Warnings ──
 st.markdown("---")
 
 wcol_header, wcol_date, wcol_wilaya = st.columns([2, 2, 2])
 
 with wcol_header:
-    st.subheader("🚨 Real-Time Warnings")
+    st.subheader(t["warnings_title"])
 
 with wcol_date:
     if not df_filtered.empty and "acquisition_time" in df_filtered.columns:
         min_date = df_filtered["acquisition_time"].min().date()
         max_date = df_filtered["acquisition_time"].max().date()
         date_range = st.date_input(
-            "Date Range",
-            value=(min_date, max_date),
-            min_value=min_date,
-            max_value=max_date,
-            key="warn_date"
+            t["filter_date"], value=(min_date, max_date),
+            min_value=min_date, max_value=max_date, key="warn_date"
         )
     else:
         date_range = None
@@ -494,14 +572,10 @@ with wcol_date:
 with wcol_wilaya:
     warn_wilayas = sorted(df_filtered["wilaya"].unique().tolist()) if not df_filtered.empty and "wilaya" in df_filtered.columns else []
     warn_wilaya_sel = st.multiselect(
-        "Filter by Wilaya",
-        options=warn_wilayas,
-        default=[],
-        key="warn_wilaya",
-        placeholder="All wilayas"
+        t["filter_by_wilaya"], options=warn_wilayas,
+        default=[], key="warn_wilaya", placeholder=t["all_wilayas"]
     )
 
-# Apply warning-level filters
 df_warnings = df_filtered.copy() if not df_filtered.empty else pd.DataFrame()
 
 if not df_warnings.empty and date_range and len(date_range) == 2:
@@ -516,26 +590,28 @@ if not df_warnings.empty and date_range and len(date_range) == 2:
 if not df_warnings.empty and warn_wilaya_sel:
     df_warnings = df_warnings[df_warnings["wilaya"].isin(warn_wilaya_sel)]
 
-# Display warning cards in 2-column grid
+# Warning cards
+CARD_STYLES = {
+    "CONFIRMED": ("rgba(239, 68, 68, 0.08)", "rgba(239, 68, 68, 0.25)", "🔴 " + t["fire_confirmed"]),
+    "PENDING": ("rgba(245, 158, 11, 0.08)", "rgba(245, 158, 11, 0.25)", "🟡 " + t["thermal_pending"]),
+    "FALSE_POSITIVE": ("rgba(100, 116, 139, 0.08)", "rgba(100, 116, 139, 0.25)", "⚪ " + t["false_alarm"]),
+    "RESOLVED": ("rgba(16, 185, 129, 0.08)", "rgba(16, 185, 129, 0.25)", "🟢 " + t["resolved_fire"]),
+}
+
 if df_warnings.empty:
-    st.info("No active fire triggers found for selected criteria.")
+    st.info(t["no_fires"])
 else:
     df_display = df_warnings.sort_values(by="acquisition_time", ascending=False)
     warn_cols = st.columns(2)
 
     for card_idx, (idx, row) in enumerate(df_display.iterrows()):
+        bg_color, border_color, title_base = CARD_STYLES.get(
+            row["status"], ("rgba(100,116,139,0.08)", "rgba(100,116,139,0.25)", row["status"])
+        )
         if row["status"] == "CONFIRMED":
-            bg_color = "rgba(239, 68, 68, 0.08)"
-            border_color = "rgba(239, 68, 68, 0.25)"
-            title = f"🔴 Fire Confirmed - FRP {row['frp']:.1f} MW"
-        elif row["status"] == "PENDING":
-            bg_color = "rgba(245, 158, 11, 0.08)"
-            border_color = "rgba(245, 158, 11, 0.25)"
-            title = "🟡 Thermal Anomaly Awaiting Verification"
+            title = f"{title_base} - FRP {row['frp']:.1f} MW"
         else:
-            bg_color = "rgba(100, 116, 139, 0.08)"
-            border_color = "rgba(100, 116, 139, 0.25)"
-            title = "⚪ False Alarm Filtered"
+            title = title_base
 
         formatted_time = row["acquisition_time"].strftime("%Y-%m-%d %H:%M UTC") if pd.notna(row["acquisition_time"]) else "N/A"
         risk_val = f"{row['risk_score']:.0f}/100" if pd.notna(row.get('risk_score')) else "N/A"
@@ -543,13 +619,13 @@ else:
 
         with warn_cols[card_idx % 2]:
             st.markdown(f"""
-            <div style="background-color: {bg_color}; border: 1px solid {border_color}; border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+            <div style="background-color: {bg_color}; border: 1px solid {border_color}; border-radius: 12px; padding: 14px; margin-bottom: 12px; direction: {text_dir};">
                 <div style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">{title}</div>
                 <div style="font-size: 13px; color: #94a3b8;">
-                    <b>Wilaya:</b> {wilaya_name}<br/>
-                    <b>Coordinates:</b> {row['latitude']:.4f}, {row['longitude']:.4f}<br/>
-                    <b>Detection:</b> {formatted_time}<br/>
-                    <b>Risk Score:</b> {risk_val}
+                    <b>{t['wilaya']}:</b> {wilaya_name}<br/>
+                    <b>{t['coordinates']}:</b> {row['latitude']:.4f}, {row['longitude']:.4f}<br/>
+                    <b>{t['detection']}:</b> {formatted_time}<br/>
+                    <b>{t['risk_score']}:</b> {risk_val}
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -557,9 +633,8 @@ else:
 # Footer
 st.markdown("---")
 st.markdown(
-    "<p style='text-align: center; color: #64748b; font-size: 12px;'>"
-    "Algeria Forest Fire detection and early warning platform. "
-    "Data Source: NASA FIRMS (VIIRS/MODIS) | Copernicus Sentinel-2 | Open-Meteo. "
+    f"<p style='text-align: center; color: #64748b; font-size: 12px; direction: {text_dir};'>"
+    f"{t['footer']}"
     "</p>",
     unsafe_allow_html=True
 )

@@ -439,6 +439,40 @@ class DbClient:
         finally:
             self._release_connection(conn)
  
+    def resolve_old_fires(self, hours=24):
+        """Marks CONFIRMED/PENDING fires as RESOLVED if not re-detected within the given hours."""
+        if not self.db_url or "change-me" in self.db_url:
+            return 0
+
+        conn = None
+        try:
+            conn = self._get_connection()
+            query = """
+                UPDATE fires
+                SET status = 'RESOLVED', updated_at = NOW()
+                WHERE status IN ('CONFIRMED', 'PENDING')
+                  AND acquisition_time < NOW() - %s::interval
+                RETURNING id;
+            """
+            with conn.cursor() as cur:
+                cur.execute(query, (f"{hours} hours",))
+                resolved_ids = cur.fetchall()
+            conn.commit()
+            count = len(resolved_ids)
+            if count > 0:
+                logger.info(f"Auto-resolved {count} old fires (not re-detected in {hours}h).")
+            return count
+        except Exception as e:
+            logger.error(f"Failed to resolve old fires: {e}")
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            return 0
+        finally:
+            self._release_connection(conn)
+
     def get_all_fires(self, limit=200):
         """
         Fetches fire data for dashboard display.

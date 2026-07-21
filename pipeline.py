@@ -334,6 +334,9 @@ def run_pipeline():
         n_total = len(forest_hotspots)
         logger.info(f"Cluster analysis complete: {n_clustered} of {n_total} hotspots belong to active clusters.")
 
+        # Auto-resolve fires that haven't been re-detected in 24 hours
+        db.resolve_old_fires(hours=24)
+
         # Process each forest hotspot
         processed_count = 0
         alerts_triggered = 0
