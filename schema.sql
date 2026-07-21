@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS fires (
     composite_score DOUBLE PRECISION,  -- Weighted composite fire confidence (0-100)
     days_since_rain DOUBLE PRECISION,  -- Days since last precipitation
     last_notified_at TIMESTAMP WITH TIME ZONE,  -- Last Telegram notification sent time
+    social_reports_count INTEGER DEFAULT 0,  -- Number of matched crowdsourced citizen / social reports
+    social_sources TEXT,  -- Summary of social sources / citizen report IDs
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     CONSTRAINT uq_latitude_longitude_acquisition UNIQUE (latitude, longitude, acquisition_time)
@@ -42,6 +44,25 @@ CREATE INDEX IF NOT EXISTS idx_fires_acquisition_time ON fires(acquisition_time 
 
 -- Index for status and detection time queries
 CREATE INDEX IF NOT EXISTS idx_fires_status_time ON fires(status, acquisition_time DESC);
+
+-- Table for crowdsourced citizen & local ranger reports
+CREATE TABLE IF NOT EXISTS citizen_reports (
+    id BIGSERIAL PRIMARY KEY,
+    fire_id BIGINT REFERENCES fires(id) ON DELETE SET NULL,
+    latitude DOUBLE PRECISION NOT NULL CONSTRAINT chk_cit_latitude CHECK (latitude >= -90.0 AND latitude <= 90.0),
+    longitude DOUBLE PRECISION NOT NULL CONSTRAINT chk_cit_longitude CHECK (longitude >= -180.0 AND longitude <= 180.0),
+    reporter_type VARCHAR(50) DEFAULT 'Citizen',
+    reporter_name VARCHAR(100),
+    wilaya VARCHAR(100),
+    severity VARCHAR(50),
+    description TEXT,
+    photo_b64 TEXT NOT NULL,  -- Mandatory photo upload / camera snapshot (Base64 string or URL)
+    verified BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_citizen_reports_coords ON citizen_reports(latitude, longitude);
+CREATE INDEX IF NOT EXISTS idx_citizen_reports_created ON citizen_reports(created_at DESC);
 
 -- Trigger to automatically populate the geom column based on latitude/longitude
 CREATE OR REPLACE FUNCTION update_fires_geom()
@@ -57,3 +78,4 @@ DROP TRIGGER IF EXISTS trg_update_fires_geom ON fires;
 CREATE TRIGGER trg_update_fires_geom
 BEFORE INSERT OR UPDATE ON fires
 FOR EACH ROW EXECUTE FUNCTION update_fires_geom();
+

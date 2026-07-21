@@ -509,3 +509,77 @@ class DbClient:
             return None
         finally:
             self._release_connection(conn)
+
+    def save_citizen_report(self, report_data):
+        """Saves a crowdsourced citizen / ranger report to the citizen_reports table."""
+        if not self.db_url or "change-me" in self.db_url:
+            return None
+            
+        conn = None
+        try:
+            conn = self._get_connection()
+            query = """
+                INSERT INTO citizen_reports (
+                    fire_id, latitude, longitude, reporter_type, reporter_name,
+                    wilaya, severity, description, photo_b64, verified
+                ) VALUES (
+                    %(fire_id)s, %(latitude)s, %(longitude)s, %(reporter_type)s, %(reporter_name)s,
+                    %(wilaya)s, %(severity)s, %(description)s, %(photo_b64)s, %(verified)s
+                ) RETURNING id;
+            """
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, {
+                    "fire_id": report_data.get("fire_id"),
+                    "latitude": report_data["latitude"],
+                    "longitude": report_data["longitude"],
+                    "reporter_type": report_data.get("reporter_type", "Citizen"),
+                    "reporter_name": report_data.get("reporter_name", "Anonymous"),
+                    "wilaya": report_data.get("wilaya"),
+                    "severity": report_data.get("severity", "Active Smoke"),
+                    "description": report_data.get("description", ""),
+                    "photo_b64": report_data["photo_b64"],  # Obligatory photo
+                    "verified": report_data.get("verified", False)
+                })
+                res = cur.fetchone()
+            conn.commit()
+            return res["id"] if res else None
+        except Exception as e:
+            logger.error(f"Failed to save citizen report: {e}")
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            return None
+        finally:
+            self._release_connection(conn)
+
+    def get_recent_citizen_reports(self, limit=100):
+        """Retrieves recent citizen reports."""
+        if not self.db_url or "change-me" in self.db_url:
+            return []
+            
+        conn = None
+        try:
+            conn = self._get_connection()
+            query = """
+                SELECT id, fire_id, latitude, longitude, reporter_type, reporter_name,
+                       wilaya, severity, description, photo_b64, verified, created_at
+                FROM citizen_reports
+                ORDER BY created_at DESC
+                LIMIT %s;
+            """
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute(query, (limit,))
+                return cur.fetchall()
+        except Exception as e:
+            logger.error(f"Failed to query citizen reports: {e}")
+            if conn:
+                try:
+                    conn.rollback()
+                except Exception:
+                    pass
+            return []
+        finally:
+            self._release_connection(conn)
+

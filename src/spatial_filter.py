@@ -1,7 +1,15 @@
 import math
-import geopandas as gpd
-from shapely.geometry import Point
 from src.config import GEOJSON_PATH
+
+try:
+    import geopandas as gpd
+    from shapely.geometry import Point
+    GEOPANDAS_AVAILABLE = True
+except ImportError:
+    gpd = None
+    Point = None
+    GEOPANDAS_AVAILABLE = False
+
 
 class SpatialFilter:
     def __init__(self, geojson_path=GEOJSON_PATH):
@@ -11,6 +19,11 @@ class SpatialFilter:
         
     def _load_boundary(self):
         """Loads the simplified northern forest risk zone GeoJSON."""
+        if not GEOPANDAS_AVAILABLE:
+            print("[WARNING] geopandas/shapely is not installed. SpatialFilter using fallback bounding box.")
+            self.gdf = None
+            return
+
         try:
             if not self.geojson_path.exists():
                 raise FileNotFoundError(f"GeoJSON file not found at {self.geojson_path}")

@@ -21,6 +21,8 @@ from src.copernicus_client import CopernicusClient
 from src.smoke_detector import SmokeDetector
 from src.db_client import DbClient
 from src.telegram_notifier import TelegramNotifier
+from src.social_verifier import SocialVerifier
+
 
 logger = logging.getLogger("pipeline")
 
@@ -199,7 +201,7 @@ def _fallback_cluster(forest_hotspots):
 # ---------------------------------------------------------------------------
 def compute_composite_score(frp, viirs_confidence, cluster_id, cluster_size,
                             risk_score, smoke_detected, smoke_confidence,
-                            is_nighttime, multi_sensor_count):
+                            is_nighttime, multi_sensor_count, social_bonus=0.0):
     """
     Computes a weighted composite fire confidence score (0-100) that integrates
     all available signals into a single decision metric.
@@ -240,8 +242,13 @@ def compute_composite_score(frp, viirs_confidence, cluster_id, cluster_size,
         score += 10.0
     elif multi_sensor_count > 0:
         score += 3.0
+
+    # 8. Bonus: Social Media & Citizen Crowdsource Reports (+10 to +15 pts)
+    if social_bonus > 0:
+        score += social_bonus
     
     return min(100.0, round(score, 1))
+
 
 
 # ---------------------------------------------------------------------------
@@ -289,6 +296,11 @@ def run_pipeline():
         copernicus = CopernicusClient()
         detector = SmokeDetector()
         db = DbClient()
+        social_verifier = SocialVerifier()
+
+        # Fetch recent citizen reports for crowdsourced cross-validation
+        recent_citizen_reports = db.get_recent_citizen_reports(limit=100)
+
 
         # 3. Fetch Active Fires — Multi-Sensor Fusion (SNPP + NOAA-20 + NOAA-21)
         max_retries = 3
@@ -536,6 +548,13 @@ def run_pipeline():
             # Download Sentinel-2 / Landsat-8 / Landsat-9 Optical image (Strategy 3: Multi-Sensor Trigger)
             image_path, product_id = copernicus.fetch_latest_sentinel_image(lat, lon, acq_datetime)
 
+            # Match citizen crowdsource reports for this hotspot location
+            matched_social_reports = social_verifier.match_reports_with_hotspot(lat, lon, acq_datetime, recent_citizen_reports)
+            social_bonus = social_verifier.calculate_score_bonus(matched_social_reports)
+            social_note = social_verifier.format_telegram_summary(matched_social_reports)
+            if matched_social_reports:
+                logger.info(f"Social/Citizen verification matched {len(matched_social_reports)} report(s). Score bonus: +{social_bonus} pts.")
+
             # Compute composite confidence score (integrates all available signals)
             smoke_detected = False
             ai_confidence = 0.0
@@ -554,7 +573,8 @@ def run_pipeline():
                 smoke_detected=smoke_detected,
                 smoke_confidence=ai_confidence,
                 is_nighttime=is_nighttime,
-                multi_sensor_count=multi_sensor_count
+                multi_sensor_count=multi_sensor_count,
+                social_bonus=social_bonus
             )
             
             logger.info(f"Composite confidence score: {composite_score}/100 (threshold: CONFIRM={COMPOSITE_CONFIRM}, PENDING={COMPOSITE_PENDING})")
@@ -583,12 +603,14 @@ def run_pipeline():
                             f"💨 <i>Optical imagery loaded but smoke plume verification fell back to thermal signature context.</i>"
                         )
                     
-                    # Add composite score to alert
+                    # Add composite score & social summary to alert
                     score_note = f"\n📊 <b>Composite Score:</b> {composite_score}/100"
                     if multi_sensor_count >= 2:
                         score_note += f" | 🛰️ <b>{multi_sensor_count} satellites</b> confirmed"
                     if is_nighttime:
                         score_note += " | 🌙 Night detection"
+                    if social_note:
+                        score_note += social_note
                     
                     alert_msg = notifier.format_fire_alert(
                         lat=lat, lon=lon, frp=frp, confidence=confidence, acq_time=acq_time_str,
@@ -596,6 +618,7 @@ def run_pipeline():
                         wind_direction=wind_direction, risk_score=risk_score, 
                         bypass_reason=(alert_bypass_reason or "") + score_note
                     )
+
                     
                     # Attach the annotated image (the 'AI look') if available
                     photo_to_send = annotated_path if annotated_path else image_path
