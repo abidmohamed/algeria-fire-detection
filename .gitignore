@@ -1,0 +1,54 @@
+# ── Credentials & Secrets ──
+.env
+*.pem
+*.key
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# ── Virtual Environments ──
+venv/
+.venv/
+env/
+
+# ── Runtime Data ──
+quicklooks/
+*.log
+pipeline.log
+*.pt
+*.onnx
+
+# ── Build & Packaging ──
+build/
+dist/
+*.egg-info/
+
+# ── IDE & OS ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Notebooks Checkpoints ──
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# ── Streamlit ──
+.streamlit/secrets.toml
+
+# ── Lock files (optional: remove if you want reproducible builds) ──
+requirements.lock
+
+# ── Gemini Agent ──
+.agents/
