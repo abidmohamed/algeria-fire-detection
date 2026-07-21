@@ -463,7 +463,116 @@ with col6:
     </div>
     """, unsafe_allow_html=True)
 
+# ── Citizen Crowdsource Verification Form (Top Placement) ──
+st.markdown("---")
+st.subheader("📢 Ground Verification & Citizen Fire Report / الإبلاغ عن حريق ميداني")
+st.markdown("<p style='color: #94a3b8; font-size: 14px;'>Report an active fire or confirm a satellite detection. Photo proof is mandatory for verification.</p>", unsafe_allow_html=True)
+
+with st.expander("📝 Submit Ground Verification Report / تقديم بلاغ عن حريق", expanded=True):
+    cform_col1, cform_col2 = st.columns(2)
+    
+    with cform_col1:
+        reporter_type = st.selectbox(
+            "Reporter Category / صفة المبلّغ",
+            ["Local Citizen / مواطن", "Forest Ranger / حارس غابات", "Civil Protection / الحماية المدنية"],
+            key="cit_reporter_type"
+        )
+        reporter_name = st.text_input("Reporter Name / Name / اسم المبلّغ (Optional)", value="", key="cit_reporter_name")
+        severity = st.selectbox(
+            "Fire Severity / مستوى الخطورة",
+            ["Active Smoke Plume / دخان كثيف", "Visible Flames Spreading / ألسنة نيران", "Extinguished / تم الإخماد"],
+            key="cit_severity"
+        )
+
+    with cform_col2:
+        loc_method = st.radio(
+            "Location Input Method / طريقة تحديد الموقع",
+            ["GPS Auto-Detect / تحديد آلي", "Wilaya & Manual Coordinates / اختيار الولاية والإحداثيات"],
+            key="cit_loc_method"
+        )
+        
+        rep_lat = 36.5
+        rep_lon = 4.0
+        selected_wilaya_name = "Tizi Ouzou / تيزي وزو"
+        
+        if loc_method.startswith("GPS"):
+            st.markdown("📍 *GPS Auto-Detect Active:* Using browser geolocation or default station coordinates.")
+            components.html("""
+            <div style="font-family: sans-serif; font-size: 12px; color: #10b981;">
+                <button onclick="getLocation()" style="background:#10b981; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">
+                    🎯 Auto-Fetch GPS Coordinates
+                </button>
+                <span id="gps_status" style="margin-left:10px; color:#94a3b8;">Click to obtain exact location</span>
+                <script>
+                function getLocation() {
+                    var status = document.getElementById("gps_status");
+                    if (navigator.geolocation) {
+                        status.innerText = "Locating...";
+                        navigator.geolocation.getCurrentPosition(function(pos) {
+                            status.innerText = "GPS Lat: " + pos.coords.latitude.toFixed(4) + ", Lon: " + pos.coords.longitude.toFixed(4);
+                        }, function(err) {
+                            status.innerText = "Geolocation failed: " + err.message;
+                        });
+                    } else {
+                        status.innerText = "Geolocation not supported.";
+                    }
+                }
+                </script>
+            </div>
+            """, height=45)
+            rep_lat = st.number_input("Latitude / خط العرض", value=36.7120, format="%.4f", key="cit_gps_lat")
+            rep_lon = st.number_input("Longitude / خط الطول", value=4.0450, format="%.4f", key="cit_gps_lon")
+        else:
+            all_wilaya_keys = list(WILAYA_BOUNDS.keys())
+            selected_wilaya_name = st.selectbox("Select Wilaya / اختر الولاية", options=all_wilaya_keys, key="cit_wilaya_select")
+            bounds = WILAYA_BOUNDS[selected_wilaya_name]
+            default_lat = (bounds["lat"][0] + bounds["lat"][1]) / 2.0
+            default_lon = (bounds["lon"][0] + bounds["lon"][1]) / 2.0
+            rep_lat = st.number_input("Latitude / خط العرض", value=default_lat, format="%.4f", key="cit_man_lat")
+            rep_lon = st.number_input("Longitude / خط الطول", value=default_lon, format="%.4f", key="cit_man_lon")
+
+    description = st.text_area("Description & Notes / تفاصيل إضافية", placeholder="E.g., Smoke plume visible near forest boundary moving North...", key="cit_desc")
+    
+    st.markdown("---")
+    st.markdown("📷 **Mandatory Photo Proof / إثبات بالصورة (إجباري)**")
+    
+    pcol1, pcol2 = st.columns(2)
+    with pcol1:
+        uploaded_file = st.file_uploader("Upload Photo File / تحميل صورة", type=["jpg", "jpeg", "png"], key="cit_file")
+    with pcol2:
+        camera_file = st.camera_input("Take Snapshot with Camera / التقاط صورة live", key="cit_cam")
+        
+    final_photo = uploaded_file or camera_file
+    
+    if st.button("🚀 Submit Fire Report / إرسال البلاغ", key="cit_submit_btn"):
+        if not final_photo:
+            st.error("⚠️ **OBLIGATORY FIELD MISSING:** You must upload a photo or take a camera snapshot to submit a ground verification report!")
+        else:
+            try:
+                photo_bytes = final_photo.getvalue()
+                b64_photo = base64.b64encode(photo_bytes).decode("utf-8")
+                mime = "image/png" if final_photo.name.endswith(".png") else "image/jpeg"
+                photo_uri = f"data:{mime};base64,{b64_photo}"
+                
+                report_payload = {
+                    "latitude": rep_lat,
+                    "longitude": rep_lon,
+                    "reporter_type": reporter_type.split("/")[0].strip(),
+                    "reporter_name": reporter_name if reporter_name else "Anonymous",
+                    "wilaya": selected_wilaya_name,
+                    "severity": severity.split("/")[0].strip(),
+                    "description": description,
+                    "photo_b64": photo_uri,
+                    "verified": True if "Ranger" in reporter_type or "Civil" in reporter_type else False
+                }
+                
+                report_id = db_client.save_citizen_report(report_payload)
+                st.success(f"✅ Fire report submitted successfully! Report ID: {report_id or 'SAVED'}. Thank you for helping protect Algerian forests.")
+            except Exception as e:
+                st.error(f"Failed to record report: {e}")
+
 # ── Map Filters ──
+
 
 st.subheader(t["map_title"])
 
@@ -701,118 +810,8 @@ else:
                     <b>{t['coordinates']}:</b> {row['latitude']:.4f}, {row['longitude']:.4f}<br/>
                     <b>{t['detection']}:</b> {formatted_time}<br/>
                     <b>{t['risk_score']}:</b> {risk_val}
-                </div>
             </div>
             """, unsafe_allow_html=True)
-
-# ── Citizen Crowdsource Verification Form ──
-st.markdown("---")
-st.subheader("📢 Ground Verification & Citizen Fire Report / الإبلاغ عن حريق ميداني")
-st.markdown("<p style='color: #94a3b8; font-size: 14px;'>Report an active fire or confirm a satellite detection. Photo proof is mandatory for verification.</p>", unsafe_allow_html=True)
-
-with st.expander("📝 Submit Ground Verification Report / تقديم بلاغ عن حريق", expanded=False):
-    cform_col1, cform_col2 = st.columns(2)
-    
-    with cform_col1:
-        reporter_type = st.selectbox(
-            "Reporter Category / صفة المبلّغ",
-            ["Local Citizen / مواطن", "Forest Ranger / حارس غابات", "Civil Protection / الحماية المدنية"],
-            key="cit_reporter_type"
-        )
-        reporter_name = st.text_input("Reporter Name / Name / اسم المبلّغ (Optional)", value="", key="cit_reporter_name")
-        severity = st.selectbox(
-            "Fire Severity / مستوى الخطورة",
-            ["Active Smoke Plume / دخان كثيف", "Visible Flames Spreading / ألسنة نيران", "Extinguished / تم الإخماد"],
-            key="cit_severity"
-        )
-
-    with cform_col2:
-        loc_method = st.radio(
-            "Location Input Method / طريقة تحديد الموقع",
-            ["GPS Auto-Detect / تحديد آلي", "Wilaya & Manual Coordinates / اختيار الولاية والإحداثيات"],
-            key="cit_loc_method"
-        )
-        
-        rep_lat = 36.5
-        rep_lon = 4.0
-        selected_wilaya_name = "Tizi Ouzou / تيزي وزو"
-        
-        if loc_method.startswith("GPS"):
-            st.markdown("📍 *GPS Auto-Detect Active:* Using browser geolocation or default station coordinates.")
-            # HTML5 Geolocation helper component
-            components.html("""
-            <div style="font-family: sans-serif; font-size: 12px; color: #10b981;">
-                <button onclick="getLocation()" style="background:#10b981; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer;">
-                    🎯 Auto-Fetch GPS Coordinates
-                </button>
-                <span id="gps_status" style="margin-left:10px; color:#94a3b8;">Click to obtain exact location</span>
-                <script>
-                function getLocation() {
-                    var status = document.getElementById("gps_status");
-                    if (navigator.geolocation) {
-                        status.innerText = "Locating...";
-                        navigator.geolocation.getCurrentPosition(function(pos) {
-                            status.innerText = "GPS Lat: " + pos.coords.latitude.toFixed(4) + ", Lon: " + pos.coords.longitude.toFixed(4);
-                        }, function(err) {
-                            status.innerText = "Geolocation failed: " + err.message;
-                        });
-                    } else {
-                        status.innerText = "Geolocation not supported.";
-                    }
-                }
-                </script>
-            </div>
-            """, height=45)
-            rep_lat = st.number_input("Latitude / خط العرض", value=36.7120, format="%.4f", key="cit_gps_lat")
-            rep_lon = st.number_input("Longitude / خط الطول", value=4.0450, format="%.4f", key="cit_gps_lon")
-        else:
-            all_wilaya_keys = list(WILAYA_BOUNDS.keys())
-            selected_wilaya_name = st.selectbox("Select Wilaya / اختر الولاية", options=all_wilaya_keys, key="cit_wilaya_select")
-            bounds = WILAYA_BOUNDS[selected_wilaya_name]
-            default_lat = (bounds["lat"][0] + bounds["lat"][1]) / 2.0
-            default_lon = (bounds["lon"][0] + bounds["lon"][1]) / 2.0
-            rep_lat = st.number_input("Latitude / خط العرض", value=default_lat, format="%.4f", key="cit_man_lat")
-            rep_lon = st.number_input("Longitude / خط الطول", value=default_lon, format="%.4f", key="cit_man_lon")
-
-    description = st.text_area("Description & Notes / تفاصيل إضافية", placeholder="E.g., Smoke plume visible near forest boundary moving North...", key="cit_desc")
-    
-    st.markdown("---")
-    st.markdown("📷 **Mandatory Photo Proof / إثبات بالصورة (إجباري)**")
-    
-    pcol1, pcol2 = st.columns(2)
-    with pcol1:
-        uploaded_file = st.file_uploader("Upload Photo File / تحميل صورة", type=["jpg", "jpeg", "png"], key="cit_file")
-    with pcol2:
-        camera_file = st.camera_input("Take Snapshot with Camera / التقاط صورة live", key="cit_cam")
-        
-    final_photo = uploaded_file or camera_file
-    
-    if st.button("🚀 Submit Fire Report / إرسال البلاغ", key="cit_submit_btn"):
-        if not final_photo:
-            st.error("⚠️ **OBLIGATORY FIELD MISSING:** You must upload a photo or take a camera snapshot to submit a ground verification report!")
-        else:
-            try:
-                photo_bytes = final_photo.getvalue()
-                b64_photo = base64.b64encode(photo_bytes).decode("utf-8")
-                mime = "image/png" if final_photo.name.endswith(".png") else "image/jpeg"
-                photo_uri = f"data:{mime};base64,{b64_photo}"
-                
-                report_payload = {
-                    "latitude": rep_lat,
-                    "longitude": rep_lon,
-                    "reporter_type": reporter_type.split("/")[0].strip(),
-                    "reporter_name": reporter_name if reporter_name else "Anonymous",
-                    "wilaya": selected_wilaya_name,
-                    "severity": severity.split("/")[0].strip(),
-                    "description": description,
-                    "photo_b64": photo_uri,
-                    "verified": True if "Ranger" in reporter_type or "Civil" in reporter_type else False
-                }
-                
-                report_id = db_client.save_citizen_report(report_payload)
-                st.success(f"✅ Fire report submitted successfully! Report ID: {report_id or 'SAVED'}. Thank you for helping protect Algerian forests.")
-            except Exception as e:
-                st.error(f"Failed to record report: {e}")
 
 # Footer
 st.markdown("---")
@@ -822,4 +821,5 @@ st.markdown(
     "</p>",
     unsafe_allow_html=True
 )
+
 
