@@ -328,23 +328,48 @@ if not df.empty:
     df["wilaya"] = df.apply(lambda r: get_wilaya(float(r["latitude"]), float(r["longitude"])), axis=1)
 
 # ── Visitor Analytics Tracker ──
+VISITOR_FILE = Path(__file__).resolve().parent / "visitor_stats.json"
+
 class VisitorTracker:
     _instance = None
     
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(VisitorTracker, cls).__new__(cls)
-            cls._instance.total_count = 1284  # Base initial count
             cls._instance.active_sessions = {}
+            cls._instance.total_count = cls._load_count()
         return cls._instance
+
+    @classmethod
+    def _load_count(cls):
+        try:
+            if VISITOR_FILE.exists():
+                with open(VISITOR_FILE, "r") as f:
+                    data = json.load(f)
+                    return data.get("total_visitors", 1285)
+        except Exception:
+            pass
+        return 1285
+
+    @classmethod
+    def _save_count(cls, count):
+        try:
+            with open(VISITOR_FILE, "w") as f:
+                json.dump({"total_visitors": count, "updated_at": datetime.now().isoformat()}, f)
+        except Exception:
+            pass
 
     def track(self, session_id):
         import time
         now_ts = time.time()
         # Prune inactive sessions older than 300s (5 minutes)
         self.active_sessions = {s: t for s, t in self.active_sessions.items() if now_ts - t < 300}
+        
+        # If this session hasn't been tracked yet, or has been idle for >120s
         if session_id not in self.active_sessions:
             self.total_count += 1
+            self._save_count(self.total_count)
+            
         self.active_sessions[session_id] = now_ts
         return self.total_count, max(1, len(self.active_sessions))
 
@@ -354,6 +379,7 @@ if "session_id" not in st.session_state:
 
 tracker = VisitorTracker()
 total_visitors, active_visitors = tracker.track(st.session_state["session_id"])
+
 
 # ── Sidebar with Language Toggle ──
 lang_choice = st.sidebar.radio("Language / اللغة", ["English", "العربية"], index=0, key="lang_toggle", horizontal=True)
